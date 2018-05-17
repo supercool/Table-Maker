@@ -125,11 +125,22 @@ class TableMakerField extends Field
                     <tr>
         ';
 
-        if ( !empty($value['columns']) )
+        // Disregard bad keys...
+        $columns = empty($value['columns']) ? [] : array_values($value['columns']);
+        if ( !empty($columns) )
         {
-            foreach ($value['columns'] as $col)
+            foreach ($columns as $col)
             {
-                $html .= '<th align="' . $col['align'] . '" width="' . $col['width'] . '">' . $col['heading'] . '</th>';
+                $html .= '<th';
+                if (!empty($col['align'])) {
+                    $html .= ' align="' . $col['align'] . '"';
+                }
+                
+                if (!empty($col['width'])) {
+                    $html .= ' width="' . $col['width'] . '"';
+                }
+                
+                $html .= '>' . $col['heading'] . '</th>';
             }
         }
 
@@ -151,8 +162,18 @@ class TableMakerField extends Field
 
                 $i = 0;
                 foreach ($row as $cell) {
-                    $align = $value['columns']['col'.$i]['align'] ?? $value['columns'][$i]['align'];
-                    $html .= '<td align="' . $align . '">' . $cell . '</td>';
+                    $align = $columns[$i]['align'];
+                    $html .= '<td';
+                    if (!empty($align)) {
+                        $html .= ' align="' . $align . '"';
+                    }
+                    $html .= '>' . $cell;
+
+                    if (!empty($columns[$i]['cellSuffix'])) {
+                        $html .= '<small class="suffix">' . $columns[$i]['cellSuffix'] . '</small>';
+                    }
+
+                    $html .= '</td>';
                     $i++;
                 }
 
@@ -269,6 +290,7 @@ class TableMakerField extends Field
                     'heading' => $val['heading'],
                     'align' => $val['align'],
                     'width' => $val['width'],
+                    'cellSuffix' => $val['cellSuffix'] ?? '',
                     'type' => 'singleline'
                 );
             }
@@ -280,6 +302,7 @@ class TableMakerField extends Field
                     'heading' => '',
                     'align' => '',
                     'width' => '',
+                    'cellSuffix' => '',
                     'type' => 'singleline'
                 )
             );
@@ -308,11 +331,17 @@ class TableMakerField extends Field
                 'heading' => Craft::t('tablemaker', 'Heading'),
                 'type' => 'singleline'
             ),
+            'cellSuffix' => [
+                'heading' => Craft::t('tablemaker', 'Cell Suffix'),
+                'class' => 'code',
+                'type' => 'singleline',
+                'width' => 30
+            ],
             'width' => array(
                 'heading' => Craft::t('tablemaker', 'Width'),
                 'class' => 'code',
-                'type' => 'singleline',
-                'width' => 50
+                'type' => 'number',
+                'width' => 30,
             ),
             'align' => array(
                 'heading' => Craft::t('tablemaker', 'Alignment'),
@@ -323,7 +352,7 @@ class TableMakerField extends Field
                     'center' => Craft::t('tablemaker', 'Center'),
                     'right'  => Craft::t('tablemaker', 'Right')
                 )
-            )
+            ),
         );
 
         // init the js

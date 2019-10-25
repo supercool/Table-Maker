@@ -11,16 +11,18 @@
 
 namespace supercool\tablemaker\fields;
 
-use supercool\tablemaker\TableMaker;
 use supercool\tablemaker\assetbundles\field\FieldAsset;
 
 use Craft;
 use craft\base\ElementInterface;
 use craft\base\Field;
-use craft\helpers\Db;
+use craft\gql\TypeLoader;
 use yii\db\Schema;
 use craft\helpers\Json;
 use craft\helpers\Template;
+use GraphQL\Type\Definition\ObjectType;
+use GraphQL\Type\Definition\Type;
+use craft\gql\GqlEntityRegistry;
 
 /**
  * @author    Supercool Ltd
@@ -214,6 +216,43 @@ class TableMakerField extends Field
         }
 
         return parent::serializeValue($value, $element);
+    }
+
+
+    /**
+     * @inheritdoc
+     * @since 3.3.0
+     */
+    public function getContentGqlType()
+    {
+        $typeName = $this->handle . '_TableMakerField';
+        $columnTypeName = $typeName . '_column';
+
+        $columnType = GqlEntityRegistry::getEntity($typeName) ?: GqlEntityRegistry::createEntity($columnTypeName, new ObjectType([
+            'name' => $columnTypeName,
+            'fields' => [
+                'heading' => Type::string(),
+                'width' => Type::string(),
+                'align' => Type::string(),
+            ],
+        ]));
+
+        $tableMakerType = GqlEntityRegistry::getEntity($typeName) ?: GqlEntityRegistry::createEntity($typeName, new ObjectType([
+            'name' => $typeName,
+            'fields' => [
+                'rows' => [
+                    'type' => Type::listOf(Type::listOf(Type::string()))
+                ],
+                'columns' => [
+                    'type' => Type::listOf($columnType),
+                ],
+                'table' => [
+                    'type' => Type::string()
+                ]
+            ]
+        ]));
+
+        return $tableMakerType;
     }
 
 
